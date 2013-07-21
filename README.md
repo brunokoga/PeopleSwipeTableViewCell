@@ -1,3 +1,11 @@
+PeopleSwipeTableViewCell
+--------------------
+This fork from the amazing MCSwipeTableViewCell intends to provide a different feature:
+
+Swiping to on direction will reveal and trigger the option as intended on the original repo.
+Swiping to the other direction will reveal a Menu which can trigger other actions.
+
+
 MCSwipeTableViewCell
 --------------------
 
