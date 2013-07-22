@@ -137,9 +137,8 @@ secondStateIconName:(NSString *)secondIconName
     [_colorIndicatorView setAutoresizingMask:UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth];
     [_colorIndicatorView setBackgroundColor:[UIColor clearColor]];
     [self insertSubview:_colorIndicatorView atIndex:0];
-    self.leftButtonsContainer.frame = self.rightButtonsContainer.frame = (CGRect){self.bounds.origin, 0, self.bounds.size.height};
-    self.leftButtonsContainer.autoresizingMask = self.rightButtonsContainer.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
-    self.leftButtonsContainer.contentMode = UIViewContentModeCenter;
+    self.leftButtonsContainer.frame = (CGRect){self.bounds.origin, 0, self.bounds.size.height};
+    self.rightButtonsContainer.frame = (CGRect){self.bounds.size.width, self.bounds.origin.y, 0, self.bounds.size.height};
     [self insertSubview:self.leftButtonsContainer aboveSubview:_colorIndicatorView];
     [self insertSubview:self.rightButtonsContainer aboveSubview:_colorIndicatorView];
     self.backgroundColor = [UIColor clearColor];
@@ -165,12 +164,21 @@ secondStateIconName:(NSString *)secondIconName
     
     // Clearing before presenting back the cell to the user
     [_colorIndicatorView setBackgroundColor:[UIColor clearColor]];
+    self.leftButtonsContainer.hidden = self.rightButtonsContainer.hidden = YES;
     
     // clearing the dragging flag
     _isDragging = NO;
 
     // Before reuse we need to reset it's state
     _shouldDrag = YES;
+}
+
+- (void)willMoveToSuperview:(UIView *)newSuperview
+{
+    [super willMoveToSuperview:newSuperview];
+    CGRect rightMenuFrame = self.rightButtonsContainer.frame;
+    rightMenuFrame.origin.x = CGRectGetWidth(self.bounds) - CGRectGetWidth(self.rightButtonsContainer.bounds);
+    self.rightButtonsContainer.frame = rightMenuFrame;
 }
 
 #pragma mark - Handle Gestures
@@ -187,6 +195,8 @@ secondStateIconName:(NSString *)secondIconName
     NSTimeInterval animationDuration = [self animationDurationWithVelocity:velocity];
     _direction = [self directionWithPercentage:percentage];
 
+    [self showOrHideMenusWithPercentage:percentage];
+    
     if (state == UIGestureRecognizerStateBegan || state == UIGestureRecognizerStateChanged) {
         _isDragging = YES;
         
@@ -200,13 +210,13 @@ secondStateIconName:(NSString *)secondIconName
         
         _currentImageName = [self imageNameWithPercentage:percentage];
         _currentPercentage = percentage;
-        MCSwipeTableViewCellState cellState= [self stateWithPercentage:percentage];
+        MCSwipeTableViewCellState cellState = [self stateWithPercentage:percentage];
         
-        if (cellState == MCSwipeTableViewCellStateLeftMenu && _direction == MCSwipeTableViewCellSideRight)
+        if (cellState == MCSwipeTableViewCellStateLeftMenu && velocity.x > 0)
         {
             [self revealMenuSide:MCSwipeTableViewCellSideLeft withDuration:animationDuration];
         }
-        else if (cellState == MCSwipeTableViewCellStateRightMenu && _direction == MCSwipeTableViewCellSideLeft)
+        else if (cellState == MCSwipeTableViewCellStateRightMenu && velocity.x < 0)
         {
             [self revealMenuSide:MCSwipeTableViewCellSideRight withDuration:animationDuration];
         }
@@ -510,16 +520,23 @@ secondStateIconName:(NSString *)secondIconName
 
 - (void)revealMenuSide:(MCSwipeTableViewCellSide)side withDuration:(NSTimeInterval)duration
 {
-    CGFloat origin;
+    UIView *containerView = nil;
     
     if (side == MCSwipeTableViewCellSideLeft)
-        origin = CGRectGetWidth(self.leftButtonsContainer.bounds);
+        containerView = self.leftButtonsContainer;
     else
-        origin = CGRectGetWidth(self.rightButtonsContainer.bounds);
+        containerView = self.rightButtonsContainer;
     
-//    CGFloat percentage = [self percentageWithOffset:origin relativeToWidth:CGRectGetWidth(self.bounds)];
+    CGRect containerFrame = containerView.frame;
+    containerFrame.origin.x = side == MCSwipeTableViewCellSideRight ? self.bounds.size.width - containerFrame.size.width : containerFrame.origin.x;
+    containerView.frame = containerFrame;
+    
+    containerView.hidden = NO;
+    
+    CGFloat origin = CGRectGetWidth(containerView.bounds);
+
     CGRect rect = self.contentView.frame;
-    rect.origin.x = origin;
+    rect.origin.x = side == MCSwipeTableViewCellSideLeft ? origin : -origin;
     
     // Color
     UIColor *color = [self colorWithPercentage:_currentPercentage];
@@ -537,8 +554,6 @@ secondStateIconName:(NSString *)secondIconName
                         options:(UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionAllowUserInteraction)
                      animations:^{
                          [self.contentView setFrame:rect];
-//                         [_slidingImageView setAlpha:0];
-//                         [self slideImageWithPercentage:percentage imageName:_currentImageName isDragging:NO];
                      }
                      completion:^(BOOL finished) {
                          [self notifyDelegate];
@@ -570,8 +585,27 @@ secondStateIconName:(NSString *)secondIconName
                                           }
                                           completion:^(BOOL finished2) {
                                               [self notifyDelegate];
+                                              self.leftButtonsContainer.hidden = self.rightButtonsContainer.hidden = YES;
                                           }];
                      }];
+}
+
+- (void)showOrHideMenusWithPercentage:(CGFloat)percentage
+{
+    if (percentage == 0)
+    {
+        self.leftButtonsContainer.hidden = self.rightButtonsContainer.hidden = YES;
+    }
+    else if (percentage < 0)
+    {
+        self.leftButtonsContainer.hidden = YES;
+        self.rightButtonsContainer.hidden = NO;
+    }
+    else if (percentage > 0)
+    {
+        self.leftButtonsContainer.hidden = NO;
+        self.rightButtonsContainer.hidden = YES;
+    }
 }
 
 #pragma mark - Menu buttons Methods
@@ -586,26 +620,31 @@ secondStateIconName:(NSString *)secondIconName
     // get the matching container view according to the side;
     UIView *containerView = side == MCSwipeTableViewCellSideLeft ? self.leftButtonsContainer : self.rightButtonsContainer;
     
-    // get the last button added on the selected side;
-    UIButton *lastAddedButton = [buttons lastObject];
-    
     // Set the next position to be at the right side of the last added button with a space between (if the space was not set by the user, a default value will be used)
     CGFloat spacing = self.menuButtonSpacing ? : kMCDefaultButtonsSpacing;
     CGPoint buttonPosition = CGPointZero;
-    buttonPosition.x = lastAddedButton.frame.origin.x + lastAddedButton.frame.size.width + spacing;
+    buttonPosition.x = containerView.frame.size.width == 0 ? spacing : containerView.frame.size.width;
     buttonPosition.y = (containerView.frame.size.height / 2);
     CGRect nextButtonFrame = (CGRect){buttonPosition, button.frame.size};
     button.frame = nextButtonFrame;
     
     // Resize the container view to fit the new button
     CGRect containerFrame = containerView.frame;
-    CGFloat additionalWidth = (nextButtonFrame.origin.x + nextButtonFrame.size.width) - (lastAddedButton.frame.origin.x + lastAddedButton.frame.size.width);
+    CGFloat additionalWidth = nextButtonFrame.origin.x + nextButtonFrame.size.width - containerFrame.size.width + spacing;
     containerFrame.size.width += additionalWidth;
+    
+    // if the buttons is being inserted on the right menu, move the container view to left
+    containerFrame.origin.x = side == MCSwipeTableViewCellSideRight ? self.bounds.size.width - containerFrame.size.width : containerFrame.origin.x;
+    
     containerView.frame = containerFrame;
     
     // Add the button to the container view and the buttons array;
     [containerView addSubview:button];
     [containerView sizeToFit];
+    
+    // Tell the cell to go back to center mode when one button is touched
+    [button addTarget:self action:@selector(bounceToOrigin) forControlEvents:UIControlEventTouchUpInside];
+    
     [buttons addObject:button];
 }
 

@@ -73,9 +73,22 @@
 
     [cell.contentView setBackgroundColor:[UIColor whiteColor]];
     [cell setSelectionStyle:UITableViewCellSelectionStyleGray];
-    [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideLeft];
-    [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideLeft];
-    cell.leftMenuColor = [UIColor purpleColor];
+    
+    
+    if (arc4random() % 2)
+    {
+        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideLeft];
+        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideLeft];
+        cell.leftMenuColor = [UIColor blackColor];
+    }
+    
+    if (arc4random() % 2)
+    {
+        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideRight];
+        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideRight];
+        cell.rightMenuColor = [UIColor purpleColor];
+    }
+
 
     if (indexPath.row % 2) {
         [cell.textLabel setText:@"Switch Mode Cell"];
