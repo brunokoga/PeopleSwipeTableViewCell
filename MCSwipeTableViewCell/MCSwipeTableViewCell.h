@@ -13,7 +13,9 @@ typedef NS_ENUM(NSUInteger, MCSwipeTableViewCellState){
     MCSwipeTableViewCellState1,
     MCSwipeTableViewCellState2,
     MCSwipeTableViewCellState3,
-    MCSwipeTableViewCellState4
+    MCSwipeTableViewCellState4,
+    MCSwipeTableViewCellStateLeftMenu,
+    MCSwipeTableViewCellStateRightMenu
 };
 
 typedef NS_ENUM(NSUInteger, MCSwipeTableViewCellDirection){
@@ -25,6 +27,11 @@ typedef NS_ENUM(NSUInteger, MCSwipeTableViewCellDirection){
 typedef NS_ENUM(NSUInteger, MCSwipeTableViewCellMode){
     MCSwipeTableViewCellModeExit = 0,
     MCSwipeTableViewCellModeSwitch
+};
+
+typedef NS_ENUM(NSUInteger, MCSwipeTableViewCellSide){
+    MCSwipeTableViewCellSideLeft = 0,
+    MCSwipeTableViewCellSideRight
 };
 
 @protocol MCSwipeTableViewCellDelegate <NSObject>
@@ -47,10 +54,14 @@ typedef NS_ENUM(NSUInteger, MCSwipeTableViewCellMode){
 @property(nonatomic, strong) UIColor *secondColor;
 @property(nonatomic, strong) UIColor *thirdColor;
 @property(nonatomic, strong) UIColor *fourthColor;
+@property(nonatomic, strong) UIColor *leftMenuColor;
+@property(nonatomic, strong) UIColor *rightMenuColor;
 
 @property(nonatomic, assign) MCSwipeTableViewCellMode mode;
 @property(nonatomic, assign) BOOL isDragging;
 @property(nonatomic, assign) BOOL shouldDrag;
+
+@property(nonatomic, assign) CGFloat menuButtonSpacing;
 
 - (id)initWithStyle:(UITableViewCellStyle)style
     reuseIdentifier:(NSString *)reuseIdentifier
@@ -71,5 +82,7 @@ secondStateIconName:(NSString *)secondIconName
                    thirdColor:(UIColor *)thirdColor
                fourthIconName:(NSString *)fourthIconName
                   fourthColor:(UIColor *)fourthColor;
+
+- (void)addButton:(UIButton *)button toCellSide:(MCSwipeTableViewCellSide)side;
 
 @end

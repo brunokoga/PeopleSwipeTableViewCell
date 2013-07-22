@@ -11,6 +11,7 @@
 static CGFloat const kMCStop1 = 0.20; // Percentage limit to trigger the first action
 static CGFloat const kMCStop2 = 0.75; // Percentage limit to trigger the second action
 static CGFloat const kMCBounceAmplitude = 20.0; // Maximum bounce amplitude when using the MCSwipeTableViewCellModeSwitch mode
+static CGFloat const kMCDefaultButtonsSpacing = 20.0f;
 static NSTimeInterval const kMCBounceDuration1 = 0.2; // Duration of the first part of the bounce animation
 static NSTimeInterval const kMCBounceDuration2 = 0.1; // Duration of the second part of the bounce animation
 static NSTimeInterval const kMCDurationLowLimit = 0.25; // Lowest duration when swipping the cell because we try to simulate velocity
@@ -62,6 +63,10 @@ static NSTimeInterval const kMCDurationHightLimit = 0.1; // Highest duration whe
 @property(nonatomic, strong) UIImageView *slidingImageView;
 @property(nonatomic, strong) NSString *currentImageName;
 @property(nonatomic, strong) UIView *colorIndicatorView;
+@property(nonatomic, strong) NSMutableArray *leftButtons;
+@property(nonatomic, strong) NSMutableArray *rightButtons;
+@property(nonatomic, strong) UIView *leftButtonsContainer;
+@property(nonatomic, strong) UIView *rightButtonsContainer;
 
 @end
 
@@ -132,6 +137,11 @@ secondStateIconName:(NSString *)secondIconName
     [_colorIndicatorView setAutoresizingMask:UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth];
     [_colorIndicatorView setBackgroundColor:[UIColor clearColor]];
     [self insertSubview:_colorIndicatorView atIndex:0];
+    self.leftButtonsContainer.frame = self.rightButtonsContainer.frame = (CGRect){self.bounds.origin, 0, self.bounds.size.height};
+    self.leftButtonsContainer.autoresizingMask = self.rightButtonsContainer.autoresizingMask = (UIViewAutoresizingFlexibleHeight | UIViewAutoresizingFlexibleWidth);
+    self.leftButtonsContainer.contentMode = UIViewContentModeCenter;
+    [self insertSubview:self.leftButtonsContainer aboveSubview:_colorIndicatorView];
+    [self insertSubview:self.rightButtonsContainer aboveSubview:_colorIndicatorView];
     self.backgroundColor = [UIColor clearColor];
 
     _slidingImageView = [[UIImageView alloc] init];
@@ -191,8 +201,16 @@ secondStateIconName:(NSString *)secondIconName
         _currentImageName = [self imageNameWithPercentage:percentage];
         _currentPercentage = percentage;
         MCSwipeTableViewCellState cellState= [self stateWithPercentage:percentage];
-
-        if (_mode == MCSwipeTableViewCellModeExit && _direction != MCSwipeTableViewCellDirectionCenter && [self validateState:cellState])
+        
+        if (cellState == MCSwipeTableViewCellStateLeftMenu && _direction == MCSwipeTableViewCellSideRight)
+        {
+            [self revealMenuSide:MCSwipeTableViewCellSideLeft withDuration:animationDuration];
+        }
+        else if (cellState == MCSwipeTableViewCellStateRightMenu && _direction == MCSwipeTableViewCellSideLeft)
+        {
+            [self revealMenuSide:MCSwipeTableViewCellSideRight withDuration:animationDuration];
+        }
+        else if (_mode == MCSwipeTableViewCellModeExit && _direction != MCSwipeTableViewCellDirectionCenter && [self validateState:cellState])
             [self moveWithDuration:animationDuration andDirection:_direction];
         else
             [self bounceToOrigin];
@@ -256,7 +274,14 @@ secondStateIconName:(NSString *)secondIconName
     NSString *imageName;
 
     // Image
-    if (percentage >= 0 && percentage < kMCStop2)
+    // check if should show buttons, if so, there is no sliding image to show
+    if (percentage > 0 && self.leftButtons.count)
+        imageName = nil;
+    else if (percentage < 0 && self.rightButtons.count)
+        imageName = nil;
+    
+    // check for another cases
+    else if (percentage >= 0 && percentage < kMCStop2)
         imageName = _firstIconName;
     else if (percentage >= kMCStop2)
         imageName = _secondIconName;
@@ -284,7 +309,14 @@ secondStateIconName:(NSString *)secondIconName
     UIColor *color;
 
     // Background Color
-    if (percentage >= kMCStop1 && percentage < kMCStop2)
+    // check if should show buttons, if so, there is no sliding image to show
+    if (percentage > 0 && self.leftButtons.count)
+        color = self.leftMenuColor;
+    else if (percentage < 0 && self.rightButtons.count)
+        color = self.rightMenuColor;
+
+    // check for another cases
+    else if (percentage >= kMCStop1 && percentage < kMCStop2)
         color = _firstColor;
     else if (percentage >= kMCStop2)
         color = _secondColor;
@@ -303,17 +335,28 @@ secondStateIconName:(NSString *)secondIconName
 
     state = MCSwipeTableViewCellStateNone;
 
-    if (percentage >= kMCStop1 && [self validateState:MCSwipeTableViewCellState1])
-        state = MCSwipeTableViewCellState1;
-
-    if (percentage >= kMCStop2 && [self validateState:MCSwipeTableViewCellState2])
-        state = MCSwipeTableViewCellState2;
-
-    if (percentage <= -kMCStop1 && [self validateState:MCSwipeTableViewCellState3])
-        state = MCSwipeTableViewCellState3;
-
-    if (percentage <= -kMCStop2 && [self validateState:MCSwipeTableViewCellState4])
-        state = MCSwipeTableViewCellState4;
+    if (percentage > 0 && self.leftButtons.count)
+    {
+        state = MCSwipeTableViewCellStateLeftMenu;
+    }
+    else if (percentage < 0 && self.rightButtons.count)
+    {
+        state = MCSwipeTableViewCellStateRightMenu;
+    }
+    else
+    {
+        if (percentage >= kMCStop1 && [self validateState:MCSwipeTableViewCellState1])
+            state = MCSwipeTableViewCellState1;
+        
+        if (percentage >= kMCStop2 && [self validateState:MCSwipeTableViewCellState2])
+            state = MCSwipeTableViewCellState2;
+        
+        if (percentage <= -kMCStop1 && [self validateState:MCSwipeTableViewCellState3])
+            state = MCSwipeTableViewCellState3;
+        
+        if (percentage <= -kMCStop2 && [self validateState:MCSwipeTableViewCellState4])
+            state = MCSwipeTableViewCellState4;
+    }
 
     return state;
 }
@@ -465,6 +508,43 @@ secondStateIconName:(NSString *)secondIconName
                      }];
 }
 
+- (void)revealMenuSide:(MCSwipeTableViewCellSide)side withDuration:(NSTimeInterval)duration
+{
+    CGFloat origin;
+    
+    if (side == MCSwipeTableViewCellSideLeft)
+        origin = CGRectGetWidth(self.leftButtonsContainer.bounds);
+    else
+        origin = CGRectGetWidth(self.rightButtonsContainer.bounds);
+    
+//    CGFloat percentage = [self percentageWithOffset:origin relativeToWidth:CGRectGetWidth(self.bounds)];
+    CGRect rect = self.contentView.frame;
+    rect.origin.x = origin;
+    
+    // Color
+    UIColor *color = [self colorWithPercentage:_currentPercentage];
+    if (color != nil) {
+        [_colorIndicatorView setBackgroundColor:color];
+    }
+    
+    // Image
+    if (_currentImageName != nil) {
+        [_slidingImageView setImage:[UIImage imageNamed:_currentImageName]];
+    }
+    
+    [UIView animateWithDuration:duration
+                          delay:0.0
+                        options:(UIViewAnimationOptionCurveEaseOut | UIViewAnimationOptionAllowUserInteraction)
+                     animations:^{
+                         [self.contentView setFrame:rect];
+//                         [_slidingImageView setAlpha:0];
+//                         [self slideImageWithPercentage:percentage imageName:_currentImageName isDragging:NO];
+                     }
+                     completion:^(BOOL finished) {
+                         [self notifyDelegate];
+                     }];
+}
+
 - (void)bounceToOrigin {
     CGFloat bounceDistance = kMCBounceAmplitude * _currentPercentage;
 
@@ -494,6 +574,41 @@ secondStateIconName:(NSString *)secondIconName
                      }];
 }
 
+#pragma mark - Menu buttons Methods
+
+- (void)addButton:(UIButton *)button toCellSide:(MCSwipeTableViewCellSide)side
+{
+    NSAssert(button != nil, @"The button object shouldn't be nil");
+    
+    // get the matching buttons array according to the side;
+    NSMutableArray *buttons = side == MCSwipeTableViewCellSideLeft ? self.leftButtons : self.rightButtons;
+    
+    // get the matching container view according to the side;
+    UIView *containerView = side == MCSwipeTableViewCellSideLeft ? self.leftButtonsContainer : self.rightButtonsContainer;
+    
+    // get the last button added on the selected side;
+    UIButton *lastAddedButton = [buttons lastObject];
+    
+    // Set the next position to be at the right side of the last added button with a space between (if the space was not set by the user, a default value will be used)
+    CGFloat spacing = self.menuButtonSpacing ? : kMCDefaultButtonsSpacing;
+    CGPoint buttonPosition = CGPointZero;
+    buttonPosition.x = lastAddedButton.frame.origin.x + lastAddedButton.frame.size.width + spacing;
+    buttonPosition.y = (containerView.frame.size.height / 2);
+    CGRect nextButtonFrame = (CGRect){buttonPosition, button.frame.size};
+    button.frame = nextButtonFrame;
+    
+    // Resize the container view to fit the new button
+    CGRect containerFrame = containerView.frame;
+    CGFloat additionalWidth = (nextButtonFrame.origin.x + nextButtonFrame.size.width) - (lastAddedButton.frame.origin.x + lastAddedButton.frame.size.width);
+    containerFrame.size.width += additionalWidth;
+    containerView.frame = containerFrame;
+    
+    // Add the button to the container view and the buttons array;
+    [containerView addSubview:button];
+    [containerView sizeToFit];
+    [buttons addObject:button];
+}
+
 #pragma mark - Delegate Notification
 
 - (void)notifyDelegate {
@@ -504,6 +619,44 @@ secondStateIconName:(NSString *)secondIconName
             [_delegate swipeTableViewCell:self didTriggerState:state withMode:_mode];
         }
     }
+}
+
+#pragma mark - Getter
+
+- (NSMutableArray *)leftButtons
+{
+    if (!_leftButtons)
+    {
+        _leftButtons = [NSMutableArray array];
+    }
+    return _leftButtons;
+}
+
+- (NSMutableArray *)rightButtons
+{
+    if (!_rightButtons)
+    {
+        _rightButtons = [NSMutableArray array];
+    }
+    return _rightButtons;
+}
+
+- (UIView *)leftButtonsContainer
+{
+    if (!_leftButtonsContainer)
+    {
+        _leftButtonsContainer = [[UIView alloc] init];
+    }
+    return _leftButtonsContainer;
+}
+
+- (UIView *)rightButtonsContainer
+{
+    if (!_rightButtonsContainer)
+    {
+        _rightButtonsContainer = [[UIView alloc] init];
+    }
+    return _rightButtonsContainer;
 }
 
 #pragma mark - Setter
