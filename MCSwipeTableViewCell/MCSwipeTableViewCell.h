@@ -85,4 +85,6 @@ secondStateIconName:(NSString *)secondIconName
 
 - (void)addButton:(UIButton *)button toCellSide:(MCSwipeTableViewCellSide)side;
 
+- (void)clearBackgroundButtons;
+
 @end

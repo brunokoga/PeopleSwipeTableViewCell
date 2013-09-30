@@ -648,6 +648,18 @@ secondStateIconName:(NSString *)secondIconName
     [buttons addObject:button];
 }
 
+- (void)clearBackgroundButtons
+{
+    [self.leftButtons enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        [obj removeFromSuperview];
+    }];
+    [self.rightButtons enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
+        [obj removeFromSuperview];
+    }];
+    self.leftButtons = nil;
+    self.rightButtons = nil;
+}
+
 #pragma mark - Delegate Notification
 
 - (void)notifyDelegate {
