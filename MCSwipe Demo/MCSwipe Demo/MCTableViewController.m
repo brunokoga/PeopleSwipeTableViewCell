@@ -74,6 +74,7 @@
     [cell.contentView setBackgroundColor:[UIColor whiteColor]];
     [cell setSelectionStyle:UITableViewCellSelectionStyleGray];
     
+    [cell clearBackgroundButtons];
     
     if (arc4random() % 2)
     {
@@ -82,7 +83,7 @@
         cell.leftMenuColor = [UIColor blackColor];
     }
     
-    if (arc4random() % 2)
+    else
     {
         [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideRight];
         [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideRight];
@@ -94,11 +95,6 @@
         [cell.textLabel setText:@"Switch Mode Cell"];
         [cell.detailTextLabel setText:@"Swipe to switch"];
         [cell setMode:MCSwipeTableViewCellModeSwitch];
-    }
-    else {
-        [cell.textLabel setText:@"Exit Mode Cell"];
-        [cell.detailTextLabel setText:@"Swipe to delete"];
-        [cell setMode:MCSwipeTableViewCellModeExit];
     }
 
     return cell;

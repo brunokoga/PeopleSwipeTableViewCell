@@ -139,8 +139,8 @@ secondStateIconName:(NSString *)secondIconName
     [self insertSubview:_colorIndicatorView atIndex:0];
     self.leftButtonsContainer.frame = (CGRect){self.bounds.origin, 0, self.bounds.size.height};
     self.rightButtonsContainer.frame = (CGRect){self.bounds.size.width, self.bounds.origin.y, 0, self.bounds.size.height};
-    [self insertSubview:self.leftButtonsContainer aboveSubview:_colorIndicatorView];
-    [self insertSubview:self.rightButtonsContainer aboveSubview:_colorIndicatorView];
+    [self insertSubview:self.leftButtonsContainer atIndex:1];
+    [self insertSubview:self.rightButtonsContainer atIndex:1];
     self.backgroundColor = [UIColor clearColor];
 
     _slidingImageView = [[UIImageView alloc] init];
@@ -650,14 +650,22 @@ secondStateIconName:(NSString *)secondIconName
 
 - (void)clearBackgroundButtons
 {
-    [self.leftButtons enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        [obj removeFromSuperview];
-    }];
-    [self.rightButtons enumerateObjectsUsingBlock:^(id obj, NSUInteger idx, BOOL *stop) {
-        [obj removeFromSuperview];
-    }];
-    self.leftButtons = nil;
-    self.rightButtons = nil;
+    for (UIButton *button in self.leftButtons)
+    {
+        [button removeFromSuperview];
+    }
+    for (UIButton *button in self.rightButtons)
+    {
+        [button removeFromSuperview];
+    }
+    [self.leftButtons removeAllObjects];
+    [self.rightButtons removeAllObjects];
+    CGRect leftRect = self.leftButtonsContainer.frame;
+    leftRect.size.width = 0;
+    self.leftButtonsContainer.frame = leftRect;
+    CGRect rightRect = self.rightButtonsContainer.frame;
+    rightRect.size.width = 0;
+    self.rightButtonsContainer.frame = rightRect;
 }
 
 #pragma mark - Delegate Notification
