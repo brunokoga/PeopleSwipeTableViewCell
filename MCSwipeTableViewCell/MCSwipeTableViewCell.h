@@ -83,7 +83,7 @@ secondStateIconName:(NSString *)secondIconName
                fourthIconName:(NSString *)fourthIconName
                   fourthColor:(UIColor *)fourthColor;
 
-- (void)addButton:(UIButton *)button toCellSide:(MCSwipeTableViewCellSide)side;
+- (void)addButton:(UIButton *)button toCellSide:(MCSwipeTableViewCellSide)side touchBlock:(void (^)(UIButton *button))touchHandler;
 
 - (void)clearBackgroundButtons;
 

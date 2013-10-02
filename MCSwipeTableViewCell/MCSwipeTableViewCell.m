@@ -67,6 +67,7 @@ static NSTimeInterval const kMCDurationHightLimit = 0.1; // Highest duration whe
 @property(nonatomic, strong) NSMutableArray *rightButtons;
 @property(nonatomic, strong) UIView *leftButtonsContainer;
 @property(nonatomic, strong) UIView *rightButtonsContainer;
+@property(nonatomic, strong) NSMutableDictionary *blockForButton;
 
 @end
 
@@ -610,7 +611,7 @@ secondStateIconName:(NSString *)secondIconName
 
 #pragma mark - Menu buttons Methods
 
-- (void)addButton:(UIButton *)button toCellSide:(MCSwipeTableViewCellSide)side
+- (void)addButton:(UIButton *)button toCellSide:(MCSwipeTableViewCellSide)side touchBlock:(void (^)(UIButton *))touchHandler
 {
     NSAssert(button != nil, @"The button object shouldn't be nil");
     
@@ -643,9 +644,20 @@ secondStateIconName:(NSString *)secondIconName
     [containerView sizeToFit];
     
     // Tell the cell to go back to center mode when one button is touched
-    [button addTarget:self action:@selector(bounceToOrigin) forControlEvents:UIControlEventTouchUpInside];
+    [button addTarget:self action:@selector(backButtonTouched:) forControlEvents:UIControlEventTouchUpInside];
+    if (touchHandler) self.blockForButton[@([button hash])] = touchHandler;
     
     [buttons addObject:button];
+}
+
+- (void)backButtonTouched:(UIButton *)sender
+{
+    void (^block)(UIButton *button) = self.blockForButton[@([sender hash])];
+    if (block)
+    {
+        block(sender);
+    }
+    [self bounceToOrigin];
 }
 
 - (void)clearBackgroundButtons
@@ -658,6 +670,7 @@ secondStateIconName:(NSString *)secondIconName
     {
         [button removeFromSuperview];
     }
+    [self.blockForButton removeAllObjects];
     [self.leftButtons removeAllObjects];
     [self.rightButtons removeAllObjects];
     CGRect leftRect = self.leftButtonsContainer.frame;
@@ -716,6 +729,15 @@ secondStateIconName:(NSString *)secondIconName
         _rightButtonsContainer = [[UIView alloc] init];
     }
     return _rightButtonsContainer;
+}
+
+- (NSMutableDictionary *)blockForButton
+{
+    if (!_blockForButton)
+    {
+        _blockForButton = [NSMutableDictionary dictionary];
+    }
+    return _blockForButton;
 }
 
 #pragma mark - Setter

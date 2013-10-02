@@ -78,15 +78,23 @@
     
     if (arc4random() % 2)
     {
-        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideLeft];
-        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideLeft];
+        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideLeft touchBlock:^(UIButton *button) {
+            NSLog(@"left - first button touched!");
+        }];
+        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideLeft touchBlock:^(UIButton *button) {
+            NSLog(@"left - second button touched");
+        }];
         cell.leftMenuColor = [UIColor blackColor];
     }
     
     else
     {
-        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideRight];
-        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideRight];
+        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideRight touchBlock:^(UIButton *button) {
+            NSLog(@"right - first button touched!");
+        }];
+        [cell addButton:[UIButton buttonWithType:UIButtonTypeContactAdd] toCellSide:MCSwipeTableViewCellSideRight touchBlock:^(UIButton *button) {
+            NSLog(@"right - second button touched!");
+        }];
         cell.rightMenuColor = [UIColor purpleColor];
     }
 
